@@ -1,5 +1,7 @@
 package com.coditas.iplmatchticketbookingsystem.config;
 
+import com.coditas.iplmatchticketbookingsystem.OAuth2SuccessHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,10 +14,16 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private JWTFilter jwtFilter;
+
+    @Autowired
+    private OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http){
@@ -23,7 +31,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(
                 auth ->
                 auth
-                        .requestMatchers("/api/v1/users/register").permitAll()
+                        .requestMatchers("/api/v1/users/register","/api/v1/login").permitAll()
                         .requestMatchers("/api/v1/tickets/**").hasRole("USER")
                         .requestMatchers(HttpMethod.GET,"/api/v1/matches/**").hasAnyRole("USER","ADMIN")
                         .requestMatchers("/api/v1/admin/register",
@@ -35,6 +43,9 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable());
         http.httpBasic(Customizer.withDefaults());
 
+        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        http.oauth2Login(oauth -> oauth.successHandler(oAuth2SuccessHandler));
         return http.build();
     }
 

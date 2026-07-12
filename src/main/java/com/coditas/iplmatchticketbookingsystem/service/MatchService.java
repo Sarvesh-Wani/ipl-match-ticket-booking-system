@@ -7,6 +7,7 @@ import com.coditas.iplmatchticketbookingsystem.entity.Match;
 import com.coditas.iplmatchticketbookingsystem.entity.Stadium;
 import com.coditas.iplmatchticketbookingsystem.entity.TicketBookings;
 import com.coditas.iplmatchticketbookingsystem.entity.User;
+import com.coditas.iplmatchticketbookingsystem.exception.ExceptionMessage;
 import com.coditas.iplmatchticketbookingsystem.exception.MatchNotFoundException;
 import com.coditas.iplmatchticketbookingsystem.exception.StadiumFullException;
 import com.coditas.iplmatchticketbookingsystem.exception.StadiumNotFoundException;
@@ -15,6 +16,7 @@ import com.coditas.iplmatchticketbookingsystem.repository.StadiumRepository;
 import com.coditas.iplmatchticketbookingsystem.repository.TicketBookingRepository;
 import com.coditas.iplmatchticketbookingsystem.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -30,17 +32,17 @@ public class MatchService {
                         StadiumRepository stadiumRepository,
                         UserRepository userRepository,
                         TicketBookingRepository ticketBookingRepository
-    ){
-        this.matchRepository=matchRepository;
-        this.stadiumRepository=stadiumRepository;
-        this.userRepository=userRepository;
-        this.ticketBookingRepository=ticketBookingRepository;
+    ) {
+        this.matchRepository = matchRepository;
+        this.stadiumRepository = stadiumRepository;
+        this.userRepository = userRepository;
+        this.ticketBookingRepository = ticketBookingRepository;
     }
 
     public MatchResponse createMatch(MatchRequest request) {
 
         Stadium stadium = stadiumRepository.findById(request.getStadium_id()).orElseThrow(
-                () -> new StadiumNotFoundException("Stadium does not exist for id ")
+                () -> new StadiumNotFoundException(ExceptionMessage.StadiumFullException)
         );
 
         Match match = new Match();
@@ -65,27 +67,27 @@ public class MatchService {
     public MatchResponse updateMatch(int mid, MatchRequest request) {
 
         Match match = matchRepository.findById(mid).orElseThrow(
-                () -> new MatchNotFoundException("Match does not exist with this id")
+                () -> new MatchNotFoundException(ExceptionMessage.MatchNotFound)
         );
 
-        if(request.getStadium_id() != null){
+        if (request.getStadium_id() != null) {
             Stadium stadium = stadiumRepository.findById(request.getStadium_id()).orElseThrow(
-                    () -> new RuntimeException("Stadium does not exist for id ")
+                    () -> new StadiumNotFoundException(ExceptionMessage.StadiumNotFound)
             );
             match.setStadium(stadium);
         }
 
-        if(request.getMatchDate()!=null){
+        if (request.getMatchDate() != null) {
             match.setMatchDate(request.getMatchDate());
         }
-        if(request.getTeamA() != null){
+        if (request.getTeamA() != null) {
             match.setTeamA(request.getTeamA());
         }
 
-        if(request.getTeamB() != null){
+        if (request.getTeamB() != null) {
             match.setTeamB(request.getTeamB());
         }
-        if(request.getTicketPrice() !=null){
+        if (request.getTicketPrice() != null) {
             match.setTicketPrice(request.getTicketPrice());
         }
 
@@ -104,7 +106,7 @@ public class MatchService {
 
     public String deleteMatch(int mid) {
         Match match = matchRepository.findById(mid).orElseThrow(
-                () -> new MatchNotFoundException("match does not exist for id "+mid)
+                () -> new MatchNotFoundException(ExceptionMessage.MatchNotFound)
         );
         matchRepository.delete(match);
         return "Match successfully deleted!";
@@ -112,7 +114,7 @@ public class MatchService {
 
     public MatchResponse getMatchById(int mid) {
         Match match = matchRepository.findById(mid).orElseThrow(
-                () -> new MatchNotFoundException("match does not exist for id "+mid)
+                () -> new MatchNotFoundException(ExceptionMessage.MatchNotFound + " " + mid)
         );
 
         return MatchResponse.builder()
@@ -132,18 +134,20 @@ public class MatchService {
         return matchList;
     }
 
+    //to make sure only atomic operations happens
+    @Transactional
     public TicketBookingResponse ticketBooking(int uid, int mid, int seats) {
 
         Match match = matchRepository.findById(mid).orElseThrow(
-                () -> new MatchNotFoundException("match does not exist for id "+mid)
+                () -> new MatchNotFoundException(ExceptionMessage.MatchNotFound + " " + mid)
         );
 
         User user = userRepository.findById(uid).orElseThrow(
-                () -> new RuntimeException("User does not exist")
+                () -> new RuntimeException("USER_DOES_NOT_EXIST")
         );
 
         Stadium stadium = stadiumRepository.findById(match.getStadium().getId()).orElseThrow(
-                () -> new StadiumNotFoundException("does not exist")
+                () -> new StadiumNotFoundException(ExceptionMessage.StadiumNotFound)
         );
 
         TicketBookings ticketBooking = new TicketBookings();
@@ -153,14 +157,18 @@ public class MatchService {
 //        int available_seats = match.getStadium().getCapacity();
         int available_seats = stadium.getCapacity();
 
-        if(seats > available_seats){
-            throw new StadiumFullException("seats not available!");
-        }else{
+        if (seats > available_seats) {
+            throw new StadiumFullException(ExceptionMessage.StadiumFullException);
+        } else {
             ticketBooking.setNumberOfSeats(seats);
             available_seats -= seats;
             stadium.setCapacity(available_seats);
             stadiumRepository.save(stadium);
         }
+
+//        if (1 > 0) {
+//            throw new RuntimeException("Exception occur here!");
+//        }
 
         ticketBooking.setTotalAmount(seats * match.getTicketPrice());
 
@@ -169,7 +177,7 @@ public class MatchService {
         return TicketBookingResponse.builder()
                 .id(savedticketBookings.getId())
                 .name(user.getName())
-                .match(match.getTeamA() +" vs "+match.getTeamB())
+                .match(match.getTeamA() + " vs " + match.getTeamB())
                 .NumberOfSeats(seats)
                 .TotalAmount(savedticketBookings.getTotalAmount())
                 .build();

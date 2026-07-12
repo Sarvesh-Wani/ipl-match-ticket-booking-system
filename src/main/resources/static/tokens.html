@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Success</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background-color: #f4f4f9; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #333; }
+        .token-box { background: #eee; padding: 15px; border-radius: 5px; word-break: break-all; margin-top: 10px; }
+        .label { font-weight: bold; color: #555; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Authentication Successful!</h2>
+    <div>
+        <p class="label">Access Token:</p>
+        <div id="accessToken" class="token-box">Loading...</div>
+    </div>
+    <div style="margin-top: 20px;">
+        <p class="label">Refresh Token:</p>
+        <div id="refreshToken" class="token-box">Loading...</div>
+    </div>
+</div>
+
+<script>
+    // Extract parameters from URL
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('accessToken').textContent = params.get('access_token') || 'Not found';
+    document.getElementById('refreshToken').textContent = params.get('refresh_token') || 'Not provided';
+</script>
+</body>
+</html>

@@ -23,6 +23,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 () -> new UsernameNotFoundException("User does not exist for username ")
         );
 
-        return new UserPrinciple(user);
+        return user;
     }
 }

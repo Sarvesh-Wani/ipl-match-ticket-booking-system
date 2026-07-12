@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name="match")
+@Table(name = "match")
 public class Match {
 
     @Id
@@ -37,5 +37,8 @@ public class Match {
     @Column(name = "ticket_price")
     private Integer ticketPrice;
 
-
+    public Match(String teamA, Integer ticketPrice) {
+        this.teamA = teamA;
+        this.ticketPrice = ticketPrice;
+    }
 }
